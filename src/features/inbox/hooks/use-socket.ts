@@ -5,12 +5,15 @@ import { getSocket } from '@/lib/socket';
 import type { Socket } from 'socket.io-client';
 
 /**
- * Singleton socket handle. We also track the currently-joined conversation
- * room in module scope so the `connect` listener (fired on every reconnect)
- * can rejoin automatically — otherwise a transient websocket drop leaves the
- * client outside its conversation room and realtime events go silent.
+ * Singleton socket handle. We track:
+ * - the currently-joined conversation room (module scope) so we can rejoin
+ *   it across reconnects;
+ * - whether the backend has acknowledged auth (`ready` event). join:conversation
+ *   emitted before `ready` is wasted — backend has no role/channelIds yet
+ *   and silently rejects. We queue the join until `ready` fires.
  */
 let activeConversationId: string | null = null;
+let authReady = false;
 
 function setActiveConversation(id: string | null) {
   activeConversationId = id;
@@ -27,16 +30,29 @@ export function useSocket() {
     const socket = getSocket();
     socketRef.current = socket;
 
-    // On every (re)connect, rejoin the active conversation room.
-    const rejoin = () => {
+    // On each new connect cycle, auth has not been acknowledged yet.
+    const onConnect = () => {
+      authReady = false;
+    };
+
+    // Backend emits `ready` at the end of handleConnection — at that point
+    // role/channelIds are populated and join:conversation will pass.
+    const onReady = () => {
+      authReady = true;
       const convId = getActiveConversation();
       if (convId) socket.emit('join:conversation', { conversationId: convId });
     };
-    socket.on('connect', rejoin);
-    if (socket.connected) rejoin();
+
+    socket.on('connect', onConnect);
+    socket.on('ready', onReady);
+    if (socket.connected && authReady) {
+      const convId = getActiveConversation();
+      if (convId) socket.emit('join:conversation', { conversationId: convId });
+    }
 
     return () => {
-      socket.off('connect', rejoin);
+      socket.off('connect', onConnect);
+      socket.off('ready', onReady);
     };
   }, []);
 
@@ -53,6 +69,11 @@ export function useSocket() {
     // Track join/leave to support auto-rejoin across reconnects.
     if (event === 'join:conversation') {
       setActiveConversation(data?.conversationId ?? null);
+      // Defer the actual emit until backend signals `ready`. Without this,
+      // a fresh tab opens the inbox, mounts ChatPanel, fires this emit
+      // BEFORE handleConnection finishes the DB lookup, and the join is
+      // silently dropped — leaving the user with stale chat panel.
+      if (!authReady) return;
     }
     if (event === 'leave:conversation') {
       if (getActiveConversation() === data?.conversationId) {
