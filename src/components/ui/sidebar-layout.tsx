@@ -6,7 +6,7 @@ import {
   DialogBackdrop,
   DialogPanel,
 } from "@headlessui/react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronLeft } from "lucide-react";
 import {
   useState,
   useEffect,
@@ -93,6 +93,29 @@ export function SidebarLayout({
           </SidebarCollapseContext.Provider>
         </div>
       </div>
+
+      {/*
+        Edge toggle — único ponto de entrada pra abrir/fechar a sidebar
+        no desktop. Fica colado na borda direita da sidebar quando aberta
+        e na borda esquerda do conteúdo quando fechada. Discreto (opacity
+        baixa idle), evidente no hover. Substitui os 2 botões antigos
+        que viviam no header da sidebar e na barra de busca da inbox.
+      */}
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        aria-label={collapsed ? "Abrir menu" : "Recolher menu"}
+        title={collapsed ? "Abrir menu" : "Recolher menu"}
+        className={`group fixed top-4 z-30 hidden h-7 w-5 items-center justify-center rounded-r-md bg-white text-zinc-400 opacity-50 ring-1 ring-zinc-950/5 transition-all duration-200 ease-in-out hover:bg-zinc-50 hover:text-zinc-900 hover:opacity-100 dark:bg-zinc-900 dark:text-zinc-500 dark:ring-white/10 dark:hover:bg-zinc-800 dark:hover:text-white lg:flex ${
+          collapsed ? "left-0" : "left-64"
+        }`}
+      >
+        <ChevronLeft
+          className={`size-3.5 transition-transform duration-200 ${
+            collapsed ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
       {/* Content area */}
       <main

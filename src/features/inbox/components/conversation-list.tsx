@@ -7,7 +7,6 @@ import {
   X,
   SlidersHorizontal,
   Check,
-  PanelLeftOpen,
   UserCheck,
   XCircle,
   RotateCcw,
@@ -24,7 +23,6 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSidebarCollapse } from '@/components/ui/sidebar-layout';
 import {
   Popover,
   PopoverButton,
@@ -115,7 +113,6 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ activeId, onSelect, viewId }: ConversationListProps) {
-  const sidebarCtx = useSidebarCollapse();
   const queryClient = useQueryClient();
   const orgId = useOrgId();
   const { on, onReconnect } = useSocket();
@@ -702,16 +699,6 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
 
       {/* Search + Filter */}
       <div className="flex items-center gap-1.5 px-3 pt-2 pb-2">
-        {sidebarCtx?.collapsed && (
-          <button
-            type="button"
-            onClick={sidebarCtx.toggle}
-            aria-label="Expandir menu"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-white"
-          >
-            <PanelLeftOpen className="size-4" />
-          </button>
-        )}
         <div className="group relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-primary" />
           <input
