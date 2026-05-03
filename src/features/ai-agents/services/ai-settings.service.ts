@@ -22,6 +22,7 @@ export interface OrganizationAiSettings {
   aiTimezone: string;
   aiBusinessHours: BusinessHoursConfig | null;
   aiOutOfHoursMessage: string | null;
+  aiBusinessNotes: string | null;
   aiAutoDisableOnHuman: boolean;
   aiMonthlyTokenCap: number | null;
 }
@@ -31,6 +32,7 @@ export interface UpdateAiSettingsInput {
   aiTimezone?: string;
   aiBusinessHours?: BusinessHoursConfig | null;
   aiOutOfHoursMessage?: string;
+  aiBusinessNotes?: string | null;
   aiAutoDisableOnHuman?: boolean;
   aiMonthlyTokenCap?: number | null;
 }

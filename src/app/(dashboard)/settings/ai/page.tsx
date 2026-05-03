@@ -36,6 +36,7 @@ export default function SettingsAiPage() {
   // anterior se o user voltar atrás.
   const [alwaysOn, setAlwaysOn] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState('');
+  const [businessNotes, setBusinessNotes] = useState('');
   const [autoDisable, setAutoDisable] = useState(true);
   const [tokenCap, setTokenCap] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -47,6 +48,7 @@ export default function SettingsAiPage() {
     setAlwaysOn(data.aiBusinessHours == null);
     setHours(data.aiBusinessHours ?? DEFAULT_BUSINESS_HOURS);
     setOutOfHoursMessage(data.aiOutOfHoursMessage ?? '');
+    setBusinessNotes(data.aiBusinessNotes ?? '');
     setAutoDisable(data.aiAutoDisableOnHuman);
     setTokenCap(data.aiMonthlyTokenCap?.toString() ?? '');
   }, [data]);
@@ -59,6 +61,7 @@ export default function SettingsAiPage() {
         aiTimezone,
         aiBusinessHours: alwaysOn ? null : hours,
         aiOutOfHoursMessage: outOfHoursMessage,
+        aiBusinessNotes: businessNotes.trim() ? businessNotes : null,
         aiAutoDisableOnHuman: autoDisable,
         aiMonthlyTokenCap: tokenCap ? parseInt(tokenCap, 10) : null,
       });
@@ -301,6 +304,41 @@ export default function SettingsAiPage() {
           placeholder="Olá! No momento estamos fora do horário de atendimento. Voltamos amanhã às 9h e respondemos sua mensagem por aqui."
           className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
         />
+      </section>
+
+      {/* Business notes — vai pro contexto de TODOS os agentes da org */}
+      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          Contexto do negócio (visto por todos os agentes)
+        </p>
+        <p className="mt-0.5 text-xs text-zinc-500">
+          Texto livre que entra no system prompt de cada agente. Use pra info que
+          muda com frequência e vale pra qualquer fluxo:
+          como cada isca/lead magnet é entregue, horários de live, política de
+          reembolso, talking points atuais, regras especiais.
+          Atualize aqui em vez de editar agente por agente.
+        </p>
+        <textarea
+          value={businessNotes}
+          onChange={(e) => setBusinessNotes(e.target.value)}
+          rows={8}
+          maxLength={4000}
+          placeholder={`Exemplos:
+
+Iscas gratuitas:
+- "MAESTRIA": entrega via aula ao vivo todo dia às 20h, link liberado 30min antes no grupo do WhatsApp.
+- "EBOOK": link de download enviado automaticamente por email após mandar a palavra.
+
+Política de bônus:
+- Liberação 7 dias após a compra, automaticamente no portal. Sem liberação manual antes disso.
+
+Reembolso:
+- Garantia de 7 dias. Após esse prazo, escalar pra atendimento humano.`}
+          className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-xs leading-relaxed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+        />
+        <p className="mt-1 text-right text-[10px] text-zinc-400">
+          {businessNotes.length} / 4000
+        </p>
       </section>
 
       {/* Token cap */}
