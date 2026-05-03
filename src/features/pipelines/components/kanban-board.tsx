@@ -17,6 +17,7 @@ import { pipelinesService, type CardSummary } from '../services/pipelines.servic
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import { CardDialog } from './card-dialog';
+import { AddConversationDialog } from './add-conversation-dialog';
 
 interface Props {
   pipelineId: string;
@@ -25,10 +26,10 @@ interface Props {
 export function KanbanBoard({ pipelineId }: Props) {
   const qc = useQueryClient();
   const [activeCard, setActiveCard] = useState<CardSummary | null>(null);
-  const [dialogCard, setDialogCard] = useState<CardSummary | 'new' | null>(
-    null,
-  );
-  const [dialogStageId, setDialogStageId] = useState<string | null>(null);
+  // Edit dialog (existing card)
+  const [editingCard, setEditingCard] = useState<CardSummary | null>(null);
+  // Add-conversation dialog (new card from existing conversation)
+  const [addStageId, setAddStageId] = useState<string | null>(null);
 
   const { data: board, isLoading } = useQuery({
     queryKey: ['pipeline-board', pipelineId],
@@ -134,11 +135,8 @@ export function KanbanBoard({ pipelineId }: Props) {
               key={stage.id}
               stage={stage}
               cards={board.cards[stage.id] ?? []}
-              onAddCard={() => {
-                setDialogStageId(stage.id);
-                setDialogCard('new');
-              }}
-              onCardClick={(c) => setDialogCard(c)}
+              onAddCard={() => setAddStageId(stage.id)}
+              onCardClick={(c) => setEditingCard(c)}
             />
           ))}
         </div>
@@ -148,18 +146,25 @@ export function KanbanBoard({ pipelineId }: Props) {
       </DndContext>
 
       <CardDialog
-        open={!!dialogCard}
+        open={!!editingCard}
         pipelineId={pipelineId}
-        card={dialogCard === 'new' ? null : dialogCard}
-        stageId={dialogStageId}
-        onClose={() => {
-          setDialogCard(null);
-          setDialogStageId(null);
-        }}
+        card={editingCard}
+        stageId={null}
+        onClose={() => setEditingCard(null)}
         onSaved={() => {
           qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
-          setDialogCard(null);
-          setDialogStageId(null);
+          setEditingCard(null);
+        }}
+      />
+
+      <AddConversationDialog
+        open={!!addStageId}
+        pipelineId={pipelineId}
+        stageId={addStageId}
+        onClose={() => setAddStageId(null)}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
+          setAddStageId(null);
         }}
       />
     </>

@@ -82,7 +82,8 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
           type="button"
           onClick={onAddCard}
           className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-white/50 hover:text-zinc-900 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100"
-          aria-label="Adicionar card"
+          aria-label="Adicionar conversa"
+          title="Adicionar conversa nessa stage"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -98,7 +99,7 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
       >
         {cards.length === 0 && (
           <p className="py-6 text-center text-[11px] text-zinc-400">
-            Nenhum card aqui ainda
+            Sem conversas. Click no + pra adicionar.
           </p>
         )}
         {cards.map((c) => (

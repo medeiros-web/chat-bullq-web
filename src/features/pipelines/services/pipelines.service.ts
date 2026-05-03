@@ -82,7 +82,8 @@ export interface CreatePipelineInput {
 }
 
 export interface CreateCardInput {
-  title: string;
+  /** Optional when conversationId is set — backend derives title from contact. */
+  title?: string;
   description?: string;
   stageId?: string;
   value?: number;
