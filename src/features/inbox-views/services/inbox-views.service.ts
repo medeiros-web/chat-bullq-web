@@ -12,6 +12,8 @@ export interface InboxViewFilters {
   /** Static list of conversations pinned to this view (set via bulk
    *  "create inbox from selection"). Other filters still apply on top. */
   conversationIds?: string[];
+  archived?: 'exclude' | 'only' | 'any';
+  unreadOnly?: boolean;
 }
 
 export interface InboxView {
@@ -22,6 +24,9 @@ export interface InboxView {
   icon: string | null;
   color: string | null;
   filters: InboxViewFilters;
+  /** `{ builtin: true }` marks system-seeded views like "Archived" — UI
+   *  hides edit/delete actions for those. */
+  metadata?: Record<string, any> | null;
   order: number;
   createdAt: string;
   updatedAt: string;

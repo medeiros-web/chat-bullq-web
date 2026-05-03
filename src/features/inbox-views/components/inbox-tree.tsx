@@ -19,6 +19,7 @@ import {
   Filter,
   Pencil,
   Trash2,
+  Archive,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -38,6 +39,7 @@ const VIEW_ICON: Record<string, any> = {
   Tag,
   Star,
   Filter,
+  Archive,
 };
 
 const COLOR_CLS: Record<string, string> = {
@@ -147,6 +149,7 @@ export function InboxTree() {
             const Icon = VIEW_ICON[v.icon ?? ''] ?? Filter;
             const colorCls = COLOR_CLS[v.color ?? 'default'] ?? COLOR_CLS.default;
             const isActive = activeViewId === v.id && isInbox;
+            const isBuiltin = v.metadata?.builtin === true;
             return (
               <div
                 key={v.id}
@@ -169,24 +172,26 @@ export function InboxTree() {
                   <Icon className={`size-3.5 ${colorCls}`} />
                   <span className="flex-1 truncate">{v.name}</span>
                 </button>
-                <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(v)}
-                    aria-label="Editar"
-                    className="flex size-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-950/10 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-300"
-                  >
-                    <Pencil className="size-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(v)}
-                    aria-label="Excluir"
-                    className="mr-1 flex size-6 items-center justify-center rounded text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
-                </div>
+                {!isBuiltin && (
+                  <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(v)}
+                      aria-label="Editar"
+                      className="flex size-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-950/10 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-zinc-300"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(v)}
+                      aria-label="Excluir"
+                      className="mr-1 flex size-6 items-center justify-center rounded text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="size-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

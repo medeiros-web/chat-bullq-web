@@ -11,11 +11,14 @@ import {
   Check,
   Loader2,
   KanbanSquare,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { tagsService, type Tag } from '@/features/settings/services/tags.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
+import { inboxService } from '../services/inbox.service';
 import type { Conversation } from '../services/inbox.service';
 
 type Target = 'conversation' | 'contact';
@@ -40,6 +43,8 @@ export function ConversationContextMenu({
   const [view, setView] = useState<'root' | Target | 'pipeline'>('root');
   const [pendingTagId, setPendingTagId] = useState<string | null>(null);
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const isArchived = (conversation as any).isArchived === true;
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ['tags', orgId],
@@ -98,6 +103,25 @@ export function ConversationContextMenu({
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['conversations'] });
     queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
+  };
+
+  const toggleArchive = async () => {
+    setArchiving(true);
+    try {
+      if (isArchived) {
+        await inboxService.unarchive(conversation.id);
+        toast.success('Conversa desarquivada');
+      } else {
+        await inboxService.archive(conversation.id);
+        toast.success('Conversa arquivada');
+      }
+      invalidate();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Erro ao arquivar');
+    } finally {
+      setArchiving(false);
+    }
   };
 
   const addToPipeline = async (pipelineId: string, pipelineName: string) => {
@@ -190,6 +214,23 @@ export function ConversationContextMenu({
             <KanbanSquare className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
             <span className="flex-1">Adicionar a pipeline</span>
             <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+          </button>
+
+          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+          <button
+            onClick={toggleArchive}
+            disabled={archiving}
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+          >
+            {archiving ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-zinc-400" />
+            ) : isArchived ? (
+              <ArchiveRestore className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            ) : (
+              <Archive className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            )}
+            <span className="flex-1">{isArchived ? 'Desarquivar' : 'Arquivar'}</span>
           </button>
         </>
       )}

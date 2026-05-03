@@ -47,6 +47,8 @@ export interface Conversation {
   status: string;
   protocol: string | null;
   isGroup: boolean;
+  isArchived?: boolean;
+  archivedAt?: string | null;
   lastMessageAt: string | null;
   createdAt: string;
   aiEnabled?: boolean | null;
@@ -243,6 +245,16 @@ export const inboxService = {
 
   async bulkReopen(ids: string[]): Promise<void> {
     await Promise.allSettled(ids.map((id) => api.post(`/conversations/${id}/reopen`)));
+  },
+
+  async archive(conversationId: string): Promise<Conversation> {
+    const { data } = await api.post(`/conversations/${conversationId}/archive`);
+    return data.data;
+  },
+
+  async unarchive(conversationId: string): Promise<Conversation> {
+    const { data } = await api.post(`/conversations/${conversationId}/unarchive`);
+    return data.data;
   },
 
   async resolveMediaUrl(messageId: string): Promise<{ url: string; mimeType?: string }> {

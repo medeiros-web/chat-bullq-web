@@ -5,10 +5,6 @@ import {
   MessageSquare,
   Search,
   X,
-  Clock,
-  MessageCircle,
-  Hourglass,
-  CheckCircle2,
   SlidersHorizontal,
   Check,
   PanelLeftOpen,
@@ -21,6 +17,8 @@ import {
   Users,
   User,
   FolderPlus,
+  MailOpen,
+  Archive,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -83,12 +81,22 @@ const statusColors: Record<string, string> = {
   CLOSED: 'bg-zinc-300 dark:bg-zinc-600',
 };
 
-const statusOptions = [
-  { label: 'Pendentes', value: 'PENDING', icon: Clock },
-  { label: 'Abertos', value: 'OPEN', icon: MessageCircle },
-  { label: 'Aguardando', value: 'WAITING', icon: Hourglass },
-  { label: 'Fechados', value: 'CLOSED', icon: CheckCircle2 },
-] as const;
+type ListFilter = 'unread' | 'archived';
+
+const filterOptions: { label: string; value: ListFilter; icon: React.ElementType; description: string }[] = [
+  {
+    label: 'Não lidas',
+    value: 'unread',
+    icon: MailOpen,
+    description: 'Apenas com mensagens novas',
+  },
+  {
+    label: 'Arquivadas',
+    value: 'archived',
+    icon: Archive,
+    description: 'Mostra a inbox arquivada',
+  },
+];
 
 interface ConversationListProps {
   activeId: string | null;
@@ -113,8 +121,10 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     isLoaded: prefsLoaded,
     update: updatePrefs,
   } = useInboxPreferences();
-  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set());
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [archivedOnly, setArchivedOnly] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const activeFilterCount = (unreadOnly ? 1 : 0) + (archivedOnly ? 1 : 0);
   const [scope, setScope] = useState<ScopeFilter>('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -136,30 +146,40 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     if (savedPrefs.scope === 'MINE' || savedPrefs.scope === 'ALL') {
       setScope(savedPrefs.scope);
     }
-    if (Array.isArray(savedPrefs.statusFilters)) {
-      setStatusFilters(new Set(savedPrefs.statusFilters));
+    if (typeof savedPrefs.unreadOnly === 'boolean') {
+      setUnreadOnly(savedPrefs.unreadOnly);
+    }
+    if (typeof savedPrefs.archivedOnly === 'boolean') {
+      setArchivedOnly(savedPrefs.archivedOnly);
     }
     if (savedPrefs.selectedChannelId !== undefined) {
       setSelectedChannelId(savedPrefs.selectedChannelId ?? null);
     }
   }, [prefsLoaded, savedPrefs]);
 
-  const toggleStatus = useCallback(
-    (value: string) => {
-      setStatusFilters((prev) => {
-        const next = new Set(prev);
-        if (next.has(value)) next.delete(value);
-        else next.add(value);
-        updatePrefs({ statusFilters: Array.from(next) });
-        return next;
-      });
+  const toggleListFilter = useCallback(
+    (value: ListFilter) => {
+      if (value === 'unread') {
+        setUnreadOnly((v) => {
+          const next = !v;
+          updatePrefs({ unreadOnly: next });
+          return next;
+        });
+      } else if (value === 'archived') {
+        setArchivedOnly((v) => {
+          const next = !v;
+          updatePrefs({ archivedOnly: next });
+          return next;
+        });
+      }
     },
     [updatePrefs],
   );
 
-  const clearStatusFilters = useCallback(() => {
-    setStatusFilters(new Set());
-    updatePrefs({ statusFilters: [] });
+  const clearListFilters = useCallback(() => {
+    setUnreadOnly(false);
+    setArchivedOnly(false);
+    updatePrefs({ unreadOnly: false, archivedOnly: false });
   }, [updatePrefs]);
 
   const handleScopeChange = useCallback(
@@ -178,7 +198,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     [updatePrefs],
   );
 
-  const statusFilterKey = Array.from(statusFilters).sort().join(',');
+  const filterKey = `${unreadOnly ? 'u' : ''}|${archivedOnly ? 'a' : ''}`;
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -206,7 +226,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   // Reset scroll when filters/search change
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0 });
-  }, [statusFilterKey, debouncedSearch, selectedChannelId, scope]);
+  }, [filterKey, debouncedSearch, selectedChannelId, scope]);
 
   const {
     data,
@@ -215,10 +235,15 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['conversations', orgId, viewId ?? null, statusFilterKey, debouncedSearch, selectedChannelId, scope, currentUserId],
+    queryKey: ['conversations', orgId, viewId ?? null, filterKey, debouncedSearch, selectedChannelId, scope, currentUserId],
     queryFn: ({ pageParam = 1 }) => {
       const params: Record<string, string> = { limit: '30', page: String(pageParam) };
-      if (statusFilters.size > 0) params.status = Array.from(statusFilters).join(',');
+      if (unreadOnly) params.unread = 'true';
+      // The "archived" scope is owned by the view when one is active.
+      // Otherwise: archivedOnly toggle = 'only', no toggle = 'exclude' (default).
+      if (!viewId) {
+        params.archived = archivedOnly ? 'only' : 'exclude';
+      }
       if (debouncedSearch) params.search = debouncedSearch;
       // Channel filter is owned by the view when one is active — don't
       // forward the local selectedChannelId so the saved filter wins.
@@ -625,15 +650,21 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         </div>
 
         <Popover className="relative">
-          <PopoverButton className={`relative flex h-[30px] w-[30px] items-center justify-center rounded-md transition-colors outline-none data-[open]:bg-zinc-100 data-[open]:text-zinc-600 dark:data-[open]:bg-zinc-800 dark:data-[open]:text-zinc-300 ${
-            statusFilters.size > 0
-              ? 'bg-primary/10 text-primary dark:bg-primary/20 data-[open]:bg-primary/10 data-[open]:text-primary dark:data-[open]:bg-primary/20 dark:data-[open]:text-primary'
-              : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
-          }`}>
+          <PopoverButton
+            // The Archived filter is also reachable as a built-in inbox view.
+            // We hide the toggle entirely when the user is already inside an
+            // inbox view (the view's own filters take precedence).
+            disabled={!!viewId}
+            className={`relative flex h-[30px] w-[30px] items-center justify-center rounded-md transition-colors outline-none data-[open]:bg-zinc-100 data-[open]:text-zinc-600 dark:data-[open]:bg-zinc-800 dark:data-[open]:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none ${
+              activeFilterCount > 0 && !viewId
+                ? 'bg-primary/10 text-primary dark:bg-primary/20 data-[open]:bg-primary/10 data-[open]:text-primary dark:data-[open]:bg-primary/20 dark:data-[open]:text-primary'
+                : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
+            }`}
+          >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            {statusFilters.size > 0 && (
+            {!viewId && activeFilterCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
-                {statusFilters.size}
+                {activeFilterCount}
               </span>
             )}
           </PopoverButton>
@@ -641,19 +672,20 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
           <PopoverPanel
             anchor="bottom end"
             transition
-            className="z-50 mt-1.5 w-48 rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900 [--anchor-gap:0.25rem]"
+            className="z-50 mt-1.5 w-56 rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900 [--anchor-gap:0.25rem]"
           >
             <div>
               <p className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                Status
+                Filtros
               </p>
-              {statusOptions.map((f) => {
-                const isActive = statusFilters.has(f.value);
+              {filterOptions.map((f) => {
+                const isActive =
+                  f.value === 'unread' ? unreadOnly : archivedOnly;
                 const Icon = f.icon;
                 return (
                   <button
                     key={f.value}
-                    onClick={() => toggleStatus(f.value)}
+                    onClick={() => toggleListFilter(f.value)}
                     className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
                       isActive
                         ? 'bg-primary/[0.06] font-medium text-primary dark:bg-primary/10'
@@ -668,15 +700,20 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                       {isActive && <Check className="h-2.5 w-2.5" />}
                     </div>
                     <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span className="flex-1">{f.label}</span>
+                    <span className="flex-1 leading-tight">
+                      <span className="block">{f.label}</span>
+                      <span className="block text-[10px] font-normal text-zinc-400 dark:text-zinc-500">
+                        {f.description}
+                      </span>
+                    </span>
                   </button>
                 );
               })}
-              {statusFilters.size > 0 && (
+              {activeFilterCount > 0 && (
                 <>
                   <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
                   <button
-                    onClick={clearStatusFilters}
+                    onClick={clearListFilters}
                     className="flex w-full items-center justify-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-300"
                   >
                     <X className="h-3 w-3" />
@@ -690,19 +727,20 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       </div>
 
       {/* Active filter chips */}
-      {statusFilters.size > 0 && (
+      {!viewId && activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-          {Array.from(statusFilters).map((value) => {
-            const option = statusOptions.find((f) => f.value === value);
-            if (!option) return null;
+          {filterOptions.map((option) => {
+            const isActive =
+              option.value === 'unread' ? unreadOnly : archivedOnly;
+            if (!isActive) return null;
             return (
               <span
-                key={value}
+                key={option.value}
                 className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary dark:bg-primary/20"
               >
                 {option.label}
                 <button
-                  onClick={() => toggleStatus(value)}
+                  onClick={() => toggleListFilter(option.value)}
                   className="rounded-full p-0.5 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30"
                 >
                   <X className="h-2.5 w-2.5" />
@@ -710,9 +748,9 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
               </span>
             );
           })}
-          {statusFilters.size > 1 && (
+          {activeFilterCount > 1 && (
             <button
-              onClick={clearStatusFilters}
+              onClick={clearListFilters}
               className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
             >
               <X className="h-2.5 w-2.5" />
@@ -801,9 +839,9 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
             <p className="mt-3 text-[13px] font-medium text-zinc-400 dark:text-zinc-500">
               Nenhuma conversa encontrada
             </p>
-            {(statusFilters.size > 0 || search) && (
+            {(activeFilterCount > 0 || search) && (
               <button
-                onClick={() => { clearStatusFilters(); handleSearchChange(''); }}
+                onClick={() => { clearListFilters(); handleSearchChange(''); }}
                 className="mt-2 text-xs text-primary hover:underline"
               >
                 Limpar filtros

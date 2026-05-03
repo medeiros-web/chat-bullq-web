@@ -2,8 +2,11 @@ import { api } from '@/lib/api';
 
 export interface InboxPreferences {
   scope?: 'ALL' | 'MINE';
+  /** @deprecated mantido pra compat de leitura — não escrevemos mais aqui. */
   statusFilters?: string[];
   selectedChannelId?: string | null;
+  unreadOnly?: boolean;
+  archivedOnly?: boolean;
 }
 
 export interface UserPreferences {
