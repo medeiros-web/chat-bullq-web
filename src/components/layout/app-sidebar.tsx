@@ -9,10 +9,10 @@ import {
   Building2,
   ChevronUp,
   PanelLeftClose,
-  KanbanSquare,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
+import { PipelinesTree } from '@/features/pipelines/components/pipelines-tree';
 
 import { useAuthStore } from '@/stores/auth-store';
 import { useSidebarCollapse } from '@/components/ui/sidebar-layout';
@@ -37,7 +37,6 @@ import {
 } from '@/components/ui/dropdown';
 
 const navItems = [
-  { href: '/pipelines', label: 'Pipelines', icon: KanbanSquare },
   { href: '/contacts', label: 'Contatos', icon: Users },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ];
@@ -99,6 +98,7 @@ export function AppSidebar() {
       <SidebarBody>
         <SidebarSection>
           <InboxTree />
+          <PipelinesTree />
           <JarvisTree />
           {navItems.map((item) => (
             <SidebarItem key={item.href} href={item.href}>
