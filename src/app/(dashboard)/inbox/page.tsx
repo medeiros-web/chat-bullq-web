@@ -11,6 +11,7 @@ import { inboxService, type Conversation } from '@/features/inbox/services/inbox
 export default function InboxPage() {
   const searchParams = useSearchParams();
   const viewId = searchParams.get('view');
+  const deepLinkConvId = searchParams.get('conversationId');
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const queryClient = useQueryClient();
 
@@ -19,6 +20,28 @@ export default function InboxPage() {
   useEffect(() => {
     setActiveConversation(null);
   }, [viewId]);
+
+  // Deep-link from elsewhere (e.g. Jarvis Execuções drawer): when the URL
+  // carries ?conversationId=..., resolve it once and open in the chat panel.
+  // We don't loop on it — the user clicking another thread should override.
+  useEffect(() => {
+    if (!deepLinkConvId) return;
+    if (activeConversation?.id === deepLinkConvId) return;
+    let cancelled = false;
+    inboxService
+      .getConversation(deepLinkConvId)
+      .then((conv) => {
+        if (!cancelled) setActiveConversation(conv);
+      })
+      .catch(() => {
+        // Silent — broken link shouldn't break the inbox; user still sees
+        // the list and can pick another conversation.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkConvId]);
 
   // Keep the active conversation object in sync with the backend (enrichment, last message, etc.)
   const { data: freshActive } = useQuery({

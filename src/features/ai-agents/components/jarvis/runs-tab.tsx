@@ -304,7 +304,9 @@ function RunDetailDrawer({ run, onClose }: { run: FeedRun; onClose: () => void }
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => router.push(`/conversations/${run.conversationId}`)}
+              onClick={() =>
+                router.push(`/inbox?conversationId=${run.conversationId}`)
+              }
               className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
             >
               <ExternalLink className="h-3 w-3" /> Ver conversa
