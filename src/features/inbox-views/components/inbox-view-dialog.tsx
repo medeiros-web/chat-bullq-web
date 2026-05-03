@@ -10,6 +10,7 @@ import {
   type InboxViewFilters,
 } from '../services/inbox-views.service';
 import { channelsService } from '@/features/channels/services/channels.service';
+import { tagsService } from '@/features/settings/services/tags.service';
 
 interface Props {
   open: boolean;
@@ -68,11 +69,18 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
   const [statuses, setStatuses] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string>('any');
   const [kind, setKind] = useState<'' | 'INDIVIDUAL' | 'GROUP'>('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { data: channels = [] } = useQuery({
     queryKey: ['channels'],
     queryFn: () => channelsService.list(),
+    enabled: open,
+  });
+
+  const { data: tags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: () => tagsService.list(),
     enabled: open,
   });
 
@@ -85,6 +93,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
       setStatuses(view.filters?.statuses ?? []);
       setAssignedTo(view.filters?.assignedTo ?? 'any');
       setKind(view.filters?.kind ?? '');
+      setTagIds(view.filters?.tagIds ?? []);
     } else {
       setName('');
       setIcon('Filter');
@@ -93,6 +102,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
       setStatuses([]);
       setAssignedTo('any');
       setKind('');
+      setTagIds([]);
     }
   }, [view, open]);
 
@@ -117,6 +127,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
     if (statuses.length) filters.statuses = statuses;
     if (assignedTo && assignedTo !== 'any') filters.assignedTo = assignedTo;
     if (kind) filters.kind = kind;
+    if (tagIds.length) filters.tagIds = tagIds;
 
     setSaving(true);
     try {
@@ -302,6 +313,52 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+              Tags ({tagIds.length || 'nenhuma — todas'})
+            </label>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {tags.length === 0 && (
+                <p className="text-[11px] text-zinc-400">
+                  Nenhuma tag cadastrada na org. Crie em Configurações &gt; Tags.
+                </p>
+              )}
+              {tags.map((t: any) => {
+                const active = tagIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() =>
+                      setTagIds((prev) =>
+                        prev.includes(t.id)
+                          ? prev.filter((x) => x !== t.id)
+                          : [...prev, t.id],
+                      )
+                    }
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all"
+                    style={{
+                      backgroundColor: active ? t.color : `${t.color}1f`,
+                      color: active ? '#fff' : t.color,
+                      border: `1px solid ${active ? t.color : `${t.color}40`}`,
+                    }}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{
+                        backgroundColor: active ? '#fff' : t.color,
+                      }}
+                    />
+                    {t.name}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[10px] text-zinc-400">
+              Conversa entra se tiver QUALQUER uma das tags marcadas (na conversa ou no contato).
+            </p>
           </div>
         </div>
 

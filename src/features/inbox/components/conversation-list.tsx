@@ -835,26 +835,40 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                         : 'hover:bg-zinc-50 dark:hover:bg-zinc-900/60'
                   }`}
                 >
-                  <div className="relative shrink-0">
-                    {inSelectionMode ? (
-                      <div
-                        role="checkbox"
-                        aria-checked={isSelected}
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(conv.id, index); }}
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-                          isSelected
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-zinc-300 bg-zinc-100 text-transparent hover:border-primary/50 dark:border-zinc-600 dark:bg-zinc-800'
-                        }`}
-                      >
-                        <Check className="h-4 w-4" />
-                      </div>
-                    ) : (
+                  <div className="group/avatar relative shrink-0">
+                    {/* Avatar visível por padrão; some no hover (ou se está selecionado / em selection mode) pra dar lugar à checkbox. */}
+                    <div
+                      className={`${
+                        inSelectionMode || isSelected
+                          ? 'invisible'
+                          : 'group-hover/avatar:invisible'
+                      }`}
+                    >
                       <ListAvatar
                         name={conv.contact.name}
                         avatarUrl={conv.contact.avatarUrl}
                       />
-                    )}
+                    </div>
+                    {/* Checkbox: aparece no hover sempre, fica visível travada
+                        quando já tem seleção ativa ou esse item é parte dela. */}
+                    <div
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelect(conv.id, index);
+                      }}
+                      className={`absolute inset-0 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 transition-colors ${
+                        isSelected
+                          ? 'border-primary bg-primary text-white opacity-100'
+                          : inSelectionMode
+                            ? 'border-zinc-300 bg-zinc-100 text-transparent hover:border-primary/50 dark:border-zinc-600 dark:bg-zinc-800'
+                            : 'border-zinc-300 bg-white text-transparent opacity-0 hover:border-primary/50 group-hover/avatar:opacity-100 dark:border-zinc-600 dark:bg-zinc-900'
+                      }`}
+                      title={isSelected ? 'Desmarcar' : 'Selecionar'}
+                    >
+                      <Check className="h-4 w-4" />
+                    </div>
                     {(() => {
                       const ChannelIcon = channelIcons[conv.channel.type] || MessageSquare;
                       return (
