@@ -43,6 +43,8 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useInboxPreferences } from '../hooks/use-inbox-preferences';
 import { ConversationContextMenu } from './conversation-context-menu';
 import { BulkAiPopover } from './bulk-ai-popover';
+import { BulkPipelinePopover } from './bulk-pipeline-popover';
+import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
 
 function ListAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -609,6 +611,44 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     }
   }, [selectedIds, clearSelection, invalidateConversations]);
 
+  // Bulk: drop selected conversations into a pipeline stage. Each
+  // conversation becomes a Card on (pipelineId, stageId). Uses
+  // allSettled so a single failure (e.g. duplicate) doesn't abort the
+  // batch — toast aggregates the result.
+  const handleBulkAddToPipeline = useCallback(
+    async (pipelineId: string, stageId: string) => {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+      setBulkLoading(true);
+      try {
+        const results = await Promise.allSettled(
+          ids.map((conversationId) =>
+            pipelinesService.createCard(pipelineId, {
+              conversationId,
+              stageId,
+            }),
+          ),
+        );
+        const ok = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.length - ok;
+        if (failed === 0) {
+          toast.success(
+            `${ok} conversa${ok > 1 ? 's' : ''} adicionada${ok > 1 ? 's' : ''} ao pipeline`,
+          );
+        } else if (ok === 0) {
+          toast.error(`Falha ao adicionar (${failed} ${failed > 1 ? 'erros' : 'erro'})`);
+        } else {
+          toast.warning(`${ok} adicionadas, ${failed} falharam`);
+        }
+        clearSelection();
+        invalidateConversations();
+      } finally {
+        setBulkLoading(false);
+      }
+    },
+    [selectedIds, clearSelection, invalidateConversations],
+  );
+
   // Bulk: pin the selected conversations into a brand-new inbox view.
   // Asks for the inbox name with a quick prompt (no full dialog overhead),
   // creates the view with conversationIds=selected, then navigates to it.
@@ -1068,6 +1108,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
             disabled={bulkLoading}
             onSetOverride={handleBulkSetAi}
             onEngage={handleBulkEngageAi}
+          />
+          <BulkPipelinePopover
+            count={selectedIds.size}
+            disabled={bulkLoading}
+            onConfirm={handleBulkAddToPipeline}
           />
           <button
             onClick={() => handleBulkAction('assign')}
