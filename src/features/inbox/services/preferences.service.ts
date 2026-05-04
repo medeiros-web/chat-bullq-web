@@ -10,6 +10,9 @@ export interface InboxPreferences {
   /** Quando true, conversas de grupos aparecem no inbox geral. Default
    *  false — esconde grupos da lista principal pra reduzir ruído. */
   showGroups?: boolean;
+  /** IDs de tags filtradas (OR — conversa precisa ter pelo menos uma).
+   *  Match em tag de conversa OU tag de contato. */
+  tagIds?: string[];
 }
 
 export interface UserPreferences {

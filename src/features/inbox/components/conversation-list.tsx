@@ -18,6 +18,7 @@ import {
   FolderPlus,
   MailOpen,
   Archive,
+  Tag as TagIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -34,6 +35,7 @@ import {
   type InboxView,
 } from '@/features/inbox-views/services/inbox-views.service';
 import { channelsService } from '@/features/channels/services/channels.service';
+import { tagsService } from '@/features/settings/services/tags.service';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { useSocket } from '../hooks/use-socket';
@@ -134,10 +136,14 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   // Toggle pra true exibe junto com individuais.
   const [showGroups, setShowGroups] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   // showGroups conta como filtro ativo SÓ quando ON (default OFF é o
-  // comportamento padrão, não merece badge).
+  // comportamento padrão, não merece badge). Tags contam 1 por tag.
   const activeFilterCount =
-    (unreadOnly ? 1 : 0) + (archivedOnly ? 1 : 0) + (showGroups ? 1 : 0);
+    (unreadOnly ? 1 : 0) +
+    (archivedOnly ? 1 : 0) +
+    (showGroups ? 1 : 0) +
+    selectedTagIds.length;
   const [scope, setScope] = useState<ScopeFilter>('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -171,6 +177,9 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     if (savedPrefs.selectedChannelId !== undefined) {
       setSelectedChannelId(savedPrefs.selectedChannelId ?? null);
     }
+    if (Array.isArray(savedPrefs.tagIds)) {
+      setSelectedTagIds(savedPrefs.tagIds);
+    }
   }, [prefsLoaded, savedPrefs]);
 
   const toggleListFilter = useCallback(
@@ -202,8 +211,27 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     setUnreadOnly(false);
     setArchivedOnly(false);
     setShowGroups(false);
-    updatePrefs({ unreadOnly: false, archivedOnly: false, showGroups: false });
+    setSelectedTagIds([]);
+    updatePrefs({
+      unreadOnly: false,
+      archivedOnly: false,
+      showGroups: false,
+      tagIds: [],
+    });
   }, [updatePrefs]);
+
+  const toggleTagFilter = useCallback(
+    (tagId: string) => {
+      setSelectedTagIds((prev) => {
+        const next = prev.includes(tagId)
+          ? prev.filter((id) => id !== tagId)
+          : [...prev, tagId];
+        updatePrefs({ tagIds: next });
+        return next;
+      });
+    },
+    [updatePrefs],
+  );
 
   const handleScopeChange = useCallback(
     (next: ScopeFilter) => {
@@ -221,7 +249,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     [updatePrefs],
   );
 
-  const filterKey = `${unreadOnly ? 'u' : ''}|${archivedOnly ? 'a' : ''}|${showGroups ? 'g' : ''}`;
+  const tagsKey = useMemo(
+    () => [...selectedTagIds].sort().join(','),
+    [selectedTagIds],
+  );
+  const filterKey = `${unreadOnly ? 'u' : ''}|${archivedOnly ? 'a' : ''}|${showGroups ? 'g' : ''}|t:${tagsKey}`;
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -241,6 +273,23 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     queryFn: () => channelsService.list(),
   });
 
+  const { data: tags = [] } = useQuery({
+    queryKey: ['tags', orgId],
+    queryFn: () => tagsService.list(),
+  });
+
+  // Drop selected tag ids that no longer exist (tag deleted in another tab).
+  // Avoid sending stale ids to the backend — they'd just match nothing.
+  useEffect(() => {
+    if (!tags.length || !selectedTagIds.length) return;
+    const valid = new Set(tags.map((t) => t.id));
+    const filtered = selectedTagIds.filter((id) => valid.has(id));
+    if (filtered.length !== selectedTagIds.length) {
+      setSelectedTagIds(filtered);
+      updatePrefs({ tagIds: filtered });
+    }
+  }, [tags, selectedTagIds, updatePrefs]);
+
   const selectedChannel = useMemo(
     () => channels.find((c) => c.id === selectedChannelId) ?? null,
     [channels, selectedChannelId],
@@ -249,7 +298,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   // Reset scroll when filters/search change
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0 });
-  }, [filterKey, debouncedSearch, selectedChannelId, scope, showGroups]);
+  }, [filterKey, debouncedSearch, selectedChannelId, scope, showGroups, tagsKey]);
 
   const {
     data,
@@ -275,6 +324,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       // Channel filter is owned by the view when one is active — don't
       // forward the local selectedChannelId so the saved filter wins.
       if (!viewId && selectedChannelId) params.channelId = selectedChannelId;
+      // Same rule as channel: tag filters layer on the main inbox only;
+      // saved views own their own tag filtering.
+      if (!viewId && selectedTagIds.length > 0) {
+        params.tagIds = selectedTagIds.join(',');
+      }
       if (scope === 'MINE' && currentUserId) params.assignedToId = currentUserId;
       if (viewId) {
         return inboxViewsService.getConversations(viewId, params);
@@ -768,9 +822,9 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
           <PopoverPanel
             anchor="bottom end"
             transition
-            className="z-50 mt-1.5 w-56 rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900 [--anchor-gap:0.25rem]"
+            className="z-50 mt-1.5 w-64 rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900 [--anchor-gap:0.25rem]"
           >
-            <div>
+            <div className="max-h-[28rem] overflow-y-auto scrollbar-thin">
               <p className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                 Filtros
               </p>
@@ -809,6 +863,56 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                   </button>
                 );
               })}
+              {tags.length > 0 && (
+                <>
+                  <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+                  <div className="flex items-center justify-between px-2.5 py-1.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                      Tags
+                    </p>
+                    {selectedTagIds.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setSelectedTagIds([]);
+                          updatePrefs({ tagIds: [] });
+                        }}
+                        className="text-[10px] text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  {tags.map((tag) => {
+                    const isActive = selectedTagIds.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTagFilter(tag.id)}
+                        className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
+                          isActive
+                            ? 'bg-primary/[0.06] font-medium text-primary dark:bg-primary/10'
+                            : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                            isActive
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-zinc-300 dark:border-zinc-600'
+                          }`}
+                        >
+                          {isActive && <Check className="h-2.5 w-2.5" />}
+                        </div>
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        <span className="flex-1 truncate">{tag.name}</span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
               {activeFilterCount > 0 && (
                 <>
                   <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
@@ -842,6 +946,34 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                 <button
                   onClick={() => toggleListFilter(option.value)}
                   className="rounded-full p-0.5 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            );
+          })}
+          {selectedTagIds.map((tagId) => {
+            const tag = tags.find((t) => t.id === tagId);
+            if (!tag) return null;
+            return (
+              <span
+                key={tag.id}
+                title={`Filtrando por tag: ${tag.name}`}
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                style={{
+                  backgroundColor: `${tag.color}1f`,
+                  color: tag.color,
+                }}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: tag.color }}
+                />
+                {tag.name}
+                <button
+                  onClick={() => toggleTagFilter(tag.id)}
+                  className="rounded-full p-0.5 transition-colors"
+                  style={{ backgroundColor: `${tag.color}14` }}
                 >
                   <X className="h-2.5 w-2.5" />
                 </button>
