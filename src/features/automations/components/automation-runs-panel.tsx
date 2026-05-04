@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle2,
   CircleAlert,
@@ -8,7 +8,8 @@ import {
   XCircle,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getSocket } from '@/lib/socket';
 import {
   Automation,
   AutomationRun,
@@ -50,6 +51,7 @@ export function AutomationRunsPanel({
   automation: Automation;
   onClose: () => void;
 }) {
+  const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<AutomationRunStatus | 'ALL'>(
     'ALL',
   );
@@ -62,8 +64,39 @@ export function AutomationRunsPanel({
         limit: 50,
         ...(statusFilter !== 'ALL' ? { status: statusFilter } : {}),
       }),
-    refetchInterval: 5000, // tail-like behavior — keep up with prod
+    // No polling — Socket.IO `automation:run` push handles freshness.
   });
+
+  // Subscribe to live runs. Backend emits to room `org:{orgId}` whenever
+  // an AutomationRun is created. We prepend the new row into this query's
+  // cache without refetching — single round-trip when the panel mounts,
+  // then push-only.
+  useEffect(() => {
+    const socket = getSocket();
+    const handler = (msg: { automationId: string; run: AutomationRun }) => {
+      if (msg.automationId !== automation.id) return;
+      // Respect the active status filter — runs that don't match are
+      // dropped client-side instead of polluting the visible list.
+      if (statusFilter !== 'ALL' && msg.run.status !== statusFilter) return;
+      qc.setQueryData(
+        ['automation-runs', automation.id, statusFilter],
+        (prev: { data: AutomationRun[]; nextCursor: string | null } | undefined) => {
+          const existing = prev?.data ?? [];
+          // Idempotent prepend in case the same event arrives twice
+          // (socket reconnect can replay during transports switch).
+          if (existing.some((r) => r.id === msg.run.id)) return prev;
+          return {
+            data: [msg.run, ...existing].slice(0, 50),
+            nextCursor: prev?.nextCursor ?? null,
+          };
+        },
+      );
+    };
+    socket.on('automation:run', handler);
+    return () => {
+      socket.off('automation:run', handler);
+    };
+  }, [automation.id, statusFilter, qc]);
 
   const runs = runsData?.data ?? [];
 
