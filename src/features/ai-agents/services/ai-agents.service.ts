@@ -167,6 +167,21 @@ export const aiAgentsService = {
     return data.data ?? data;
   },
 
+  async listAgentSkills(id: string): Promise<AgentSkillBinding[]> {
+    const { data } = await api.get(`/ai-agents/${id}/skills`);
+    return data.data ?? data;
+  },
+
+  async setSkillApproval(
+    agentId: string,
+    skillId: string,
+    requiresApproval: boolean,
+  ): Promise<void> {
+    await api.patch(`/ai-agents/${agentId}/skills/${skillId}/approval`, {
+      requiresApproval,
+    });
+  },
+
   async feed(
     params: {
       agentId?: string;
@@ -202,6 +217,19 @@ export const aiAgentsService = {
   },
 
 };
+
+export interface AgentSkillBinding {
+  skillId: string;
+  requiresApproval: boolean;
+  skill: {
+    id: string;
+    name: string;
+    description: string;
+    source: 'BUILTIN' | 'HTTP' | 'SQL';
+    category: string | null;
+    isActive: boolean;
+  };
+}
 
 export type Period = '24h' | '7d' | '30d';
 
