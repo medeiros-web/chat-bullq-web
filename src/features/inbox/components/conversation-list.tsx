@@ -540,6 +540,31 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         },
       );
     });
+    // Mirror of conversation:read for the "mark as unread" action — keeps
+    // other tabs/devices for the same user in sync with the new badge.
+    const unsubUnread = on('conversation:unread', (payload: any) => {
+      const id = payload?.conversationId;
+      if (!id) return;
+      const count = Number(payload?.unreadCount) || 1;
+      queryClient.setQueriesData<any>(
+        { queryKey: ['conversations'] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p: any) => ({
+              ...p,
+              conversations: p.conversations.map((c: Conversation) =>
+                c.id === id ? { ...c, unreadCount: count } : c,
+              ),
+            })),
+          };
+        },
+      );
+      // Refetch so the conversation re-enters an "unread only" view it
+      // had previously dropped from.
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    });
     // Reconnect: any events that fired while we were offline are gone, so
     // sync the list from scratch when the socket comes back.
     const unsubReconnect = onReconnect(() => {
@@ -551,6 +576,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       unsubImported?.();
       unsubUpdated?.();
       unsubRead?.();
+      unsubUnread?.();
       unsubReconnect?.();
     };
   }, [on, onReconnect, queryClient]);

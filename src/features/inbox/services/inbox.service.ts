@@ -199,6 +199,13 @@ export const inboxService = {
     return data.data ?? data;
   },
 
+  async markAsUnread(
+    conversationId: string,
+  ): Promise<{ ok: boolean; unreadCount: number }> {
+    const { data } = await api.post(`/conversations/${conversationId}/unread`);
+    return data.data ?? data;
+  },
+
   async reopenConversation(conversationId: string): Promise<Conversation> {
     const { data } = await api.post(`/conversations/${conversationId}/reopen`);
     return data.data;
