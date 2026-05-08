@@ -266,7 +266,7 @@ function Section({
                     </td>
                     <td className="px-3 py-2 text-right">
                       <Link
-                        href={`/inbox?conv=${c.id}`}
+                        href={`/inbox?conversationId=${c.id}`}
                         className="text-xs text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
                       >
                         abrir →
