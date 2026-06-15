@@ -1,15 +1,6 @@
 node_modules
 .next
-out
-.git
-.gitignore
 .env
 .env.*
-!.env.example
-.DS_Store
-.vscode
-.idea
 *.log
-coverage
-*.tsbuildinfo
-README.md
+.git
