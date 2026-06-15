@@ -1,9 +1,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
-ARG NEXT_PUBLIC_API_URL=https://chatbullq-api.chatatender.ia.br/api/v1
+ARG NEXT_PUBLIC_API_URL=https://wmmapi.chatatender.ia.br/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
