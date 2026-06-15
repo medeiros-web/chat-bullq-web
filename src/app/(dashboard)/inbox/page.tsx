@@ -94,22 +94,42 @@ export default function InboxPage() {
     }
   }, [queryClient, activeConversation]);
 
+  const handleSelect = useCallback(
+    (conv: Conversation) => {
+      setActiveConversation(conv);
+    },
+    [],
+  );
+
+  const handleBack = useCallback(() => {
+    setActiveConversation(null);
+  }, []);
+
   return (
     <div className="flex h-full">
-      <ConversationList
-        activeId={activeConversation?.id || null}
-        onSelect={setActiveConversation}
-        viewId={viewId}
-      />
+      {/* Conversation list — hidden on mobile when a chat is open */}
+      <div
+        className={`flex flex-col w-full max-w-sm shrink-0 border-r border-zinc-200 dark:border-zinc-800 ${
+          activeConversation ? 'hidden lg:flex' : 'flex'
+        }`}
+      >
+        <ConversationList
+          activeId={activeConversation?.id || null}
+          onSelect={handleSelect}
+          viewId={viewId}
+        />
+      </div>
 
+      {/* Chat panel — shown on mobile only when a conversation is active */}
       {activeConversation ? (
-        <>
+        <div className="flex flex-1 flex-col min-w-0">
           <ChatPanel
             key={activeConversation.id}
             conversation={activeConversation}
             onConversationUpdate={handleConversationUpdate}
             onToggleAgentLogs={toggleAgentLogs}
             agentLogsOpen={agentLogsOpen}
+            onBack={handleBack}
           />
           {agentLogsOpen && (
             <AgentRunsSidebar
@@ -118,9 +138,9 @@ export default function InboxPage() {
               onClose={toggleAgentLogs}
             />
           )}
-        </>
+        </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
+        <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
             <MessageSquare className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
           </div>

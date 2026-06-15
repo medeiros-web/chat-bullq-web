@@ -1,0 +1,50 @@
+{
+  "name": "Chat BullQ",
+  "short_name": "BullQ",
+  "description": "Plataforma de atendimento omnichannel",
+  "start_url": "/inbox",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Inbox",
+      "short_name": "Inbox",
+      "url": "/inbox",
+      "description": "Abrir inbox de conversas"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Analytics",
+      "url": "/dashboard",
+      "description": "Ver métricas e relatórios"
+    },
+    {
+      "name": "AI Agents",
+      "short_name": "Jarvis",
+      "url": "/ai-agents",
+      "description": "Gerenciar agentes de IA"
+    }
+  ]
+}

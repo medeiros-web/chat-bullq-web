@@ -13,6 +13,7 @@ import {
   Mail,
   Send,
   Activity,
+  ArrowLeft,
 } from 'lucide-react';
 import { ConversationAiToggle } from './conversation-ai-toggle';
 import { AssignmentPopover } from './assignment-popover';
@@ -23,9 +24,10 @@ import { inboxService, type Conversation } from '../services/inbox.service';
 interface ConversationHeaderProps {
   conversation: Conversation;
   onUpdate: () => void;
-  /** When provided, renders a toggle button for the agent-runs sidebar. */
   onToggleAgentLogs?: () => void;
   agentLogsOpen?: boolean;
+  /** Mobile: go back to conversation list */
+  onBack?: () => void;
 }
 
 function ChannelBadge({ type, name }: { type: string; name: string }) {
@@ -100,6 +102,7 @@ export function ConversationHeader({
   onUpdate,
   onToggleAgentLogs,
   agentLogsOpen,
+  onBack,
 }: ConversationHeaderProps) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
@@ -142,6 +145,16 @@ export function ConversationHeader({
   return (
     <div className="flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Voltar"
+            className="lg:hidden -ml-1 flex size-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+        )}
         <HeaderAvatar
           name={conversation.contact.name}
           avatarUrl={conversation.contact.avatarUrl}

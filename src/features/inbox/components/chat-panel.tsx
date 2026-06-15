@@ -23,10 +23,10 @@ import { PendingActionsList } from '../pending-actions/pending-actions-list';
 interface ChatPanelProps {
   conversation: Conversation;
   onConversationUpdate: () => void;
-  /** Forwarded to ConversationHeader so the agent-runs sidebar toggle
-   *  shows up in the chat header. */
   onToggleAgentLogs?: () => void;
   agentLogsOpen?: boolean;
+  /** Mobile: go back to conversation list */
+  onBack?: () => void;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -375,6 +375,7 @@ export function ChatPanel({
   onConversationUpdate,
   onToggleAgentLogs,
   agentLogsOpen,
+  onBack,
 }: ChatPanelProps) {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -671,6 +672,7 @@ export function ChatPanel({
         onUpdate={onConversationUpdate}
         onToggleAgentLogs={onToggleAgentLogs}
         agentLogsOpen={agentLogsOpen}
+        onBack={onBack}
       />
 
       <PendingActionsList conversationId={conversation.id} />
