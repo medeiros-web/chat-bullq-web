@@ -14,13 +14,14 @@ import {
 } from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
 import '@xyflow/react/dist/style.css';
-import { Bot, Plus } from 'lucide-react';
+import { Bot, ChevronLeft, ChevronRight, Plus, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   aiAgentsService,
   type AiAgent,
   DEPARTMENT_COLORS,
 } from '../services/ai-agents.service';
+import { aiCatalogService, type AiTool } from '../services/ai-catalog.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { CreateAgentDialog } from './create-agent-dialog';
 import { EditAgentDialog } from './edit-agent-dialog';
@@ -117,10 +118,18 @@ export function AgentsList() {
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<AiAgent | null>(null);
   const [deptFilter, setDeptFilter] = useState<string | null>(null);
+  const [toolFilter, setToolFilter] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: agents, isLoading } = useQuery({
     queryKey: ['ai-agents', orgId],
     queryFn: () => aiAgentsService.list(),
+  });
+
+  // Fetch skills to derive tool→agent associations
+  const { data: skills } = useQuery({
+    queryKey: ['ai-catalog-skills', orgId],
+    queryFn: () => aiCatalogService.listSkills(),
   });
 
   const refresh = () =>
@@ -136,6 +145,31 @@ export function AgentsList() {
     }
   };
 
+  // Build tool list with agent-count derived from skills binding
+  const { tools, toolAgentMap } = useMemo(() => {
+    if (!skills) return { tools: [] as AiTool[], toolAgentMap: new Map<string, Set<string>>() };
+
+    const map = new Map<string, Set<string>>();
+    const toolsById = new Map<string, AiTool>();
+
+    for (const skill of skills) {
+      if (!skill.tool) continue;
+      const tool = skill.tool as AiTool;
+      if (!toolsById.has(tool.id)) toolsById.set(tool.id, tool);
+      if (!map.has(tool.id)) map.set(tool.id, new Set());
+
+      // Each skill may have agents[] binding
+      for (const binding of skill.agents ?? []) {
+        map.get(tool.id)!.add(binding.agent.id);
+      }
+    }
+
+    return {
+      tools: [...toolsById.values()].sort((a, b) => a.name.localeCompare(b.name)),
+      toolAgentMap: map,
+    };
+  }, [skills]);
+
   // Distinct departments present, in stable order, for the filter chips.
   const departments = useMemo(() => {
     if (!agents) return [];
@@ -150,9 +184,14 @@ export function AgentsList() {
 
   const filtered = useMemo(() => {
     if (!agents) return [];
-    if (!deptFilter) return agents;
-    return agents.filter((a) => a.department === deptFilter);
-  }, [agents, deptFilter]);
+    let list = agents;
+    if (deptFilter) list = list.filter((a) => a.department === deptFilter);
+    if (toolFilter) {
+      const agentIds = toolAgentMap.get(toolFilter) ?? new Set();
+      list = list.filter((a) => agentIds.has(a.id));
+    }
+    return list;
+  }, [agents, deptFilter, toolFilter, toolAgentMap]);
 
   const { nodes, edges } = useMemo(() => {
     const out = layoutOrganogram(filtered);
@@ -175,6 +214,7 @@ export function AgentsList() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -193,6 +233,7 @@ export function AgentsList() {
         </button>
       </div>
 
+      {/* ── Dept filter chips ────────────────────────────────────────── */}
       {departments.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
           <span className="text-xs font-medium text-zinc-500">Departamento:</span>
@@ -226,65 +267,153 @@ export function AgentsList() {
         </div>
       )}
 
-      <div className="flex-1 min-h-[640px]">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
-          </div>
-        ) : hasAgents ? (
-          <ReactFlowProvider>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              fitView
-              fitViewOptions={{ padding: 0.2 }}
-              proOptions={{ hideAttribution: true }}
-              minZoom={0.3}
-              maxZoom={1.5}
-              nodesConnectable={false}
-              nodesFocusable={false}
-              edgesFocusable={false}
-              className="bg-zinc-50 dark:bg-zinc-950"
-            >
-              <Background gap={24} size={1} color="#e4e4e7" />
-              <Controls showInteractive={false} />
-              <MiniMap
-                pannable
-                zoomable
-                nodeColor={(n) => {
-                  const a = (n.data as AgentNodeData).agent;
-                  if (a.kind === 'ORCHESTRATOR') return '#6366f1';
-                  if (a.department === 'VENDAS') return '#10b981';
-                  if (a.department === 'SUPORTE') return '#3b82f6';
-                  if (a.department === 'CS') return '#8b5cf6';
-                  return '#a1a1aa';
-                }}
-                className="!bg-white dark:!bg-zinc-900"
-              />
-            </ReactFlow>
-          </ReactFlowProvider>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center p-10">
-            <div className="rounded-xl border-2 border-dashed border-zinc-200 p-16 dark:border-zinc-800">
-              <Bot className="mx-auto h-10 w-10 text-zinc-300 dark:text-zinc-600" />
-              <p className="mt-3 text-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                Nenhum agente cadastrado ainda
-              </p>
-              <p className="mt-1 max-w-md text-center text-xs text-zinc-400 dark:text-zinc-500">
-                Crie um agente, dê a ele um system prompt e atribua a um canal —
-                ele passa a responder automaticamente.
-              </p>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="mx-auto mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Criar primeiro agente
-              </button>
+      {/* ── Body: sidebar + canvas ───────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+        {/* Tool Sidebar */}
+        <aside
+          className={`relative flex flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 transition-all duration-200 ${
+            sidebarOpen ? 'w-56' : 'w-10'
+          }`}
+        >
+          {/* Toggle button */}
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            className="absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            {sidebarOpen ? (
+              <ChevronLeft className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+
+          {sidebarOpen && (
+            <>
+              <div className="flex items-center gap-2 px-4 py-3">
+                <Wrench className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  Filtrar por Tool
+                </span>
+              </div>
+
+              <nav className="flex-1 overflow-y-auto px-2 pb-4">
+                {/* "Todos" option */}
+                <button
+                  onClick={() => setToolFilter(null)}
+                  className={`mb-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    toolFilter === null
+                      ? 'bg-primary/10 text-primary dark:bg-primary/20'
+                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="truncate">Todos os agentes</span>
+                  <span className="ml-auto shrink-0 rounded-full bg-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                    {agents?.length ?? 0}
+                  </span>
+                </button>
+
+                {tools.length > 0 && (
+                  <div className="mb-1 mt-3 px-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Tools disponíveis
+                    </span>
+                  </div>
+                )}
+
+                {tools.map((tool) => {
+                  const count = toolAgentMap.get(tool.id)?.size ?? 0;
+                  const active = toolFilter === tool.id;
+                  return (
+                    <button
+                      key={tool.id}
+                      onClick={() => setToolFilter(active ? null : tool.id)}
+                      className={`mb-0.5 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition-colors ${
+                        active
+                          ? 'bg-primary/10 text-primary dark:bg-primary/20'
+                          : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      <Wrench className={`h-3 w-3 shrink-0 ${active ? 'text-primary' : 'text-zinc-400'}`} />
+                      <span className="truncate">{tool.name}</span>
+                      <span className="ml-auto shrink-0 rounded-full bg-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {tools.length === 0 && (
+                  <p className="px-3 py-4 text-center text-[11px] text-zinc-400">
+                    Nenhuma tool cadastrada
+                  </p>
+                )}
+              </nav>
+            </>
+          )}
+        </aside>
+
+        {/* Organogram canvas */}
+        <div className="flex-1 min-h-[400px]">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
             </div>
-          </div>
-        )}
+          ) : hasAgents ? (
+            <ReactFlowProvider>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                fitView
+                fitViewOptions={{ padding: 0.2 }}
+                proOptions={{ hideAttribution: true }}
+                minZoom={0.3}
+                maxZoom={1.5}
+                nodesConnectable={false}
+                nodesFocusable={false}
+                edgesFocusable={false}
+                className="bg-zinc-50 dark:bg-zinc-950"
+              >
+                <Background gap={24} size={1} color="#e4e4e7" />
+                <Controls showInteractive={false} />
+                <MiniMap
+                  pannable
+                  zoomable
+                  nodeColor={(n) => {
+                    const a = (n.data as AgentNodeData).agent;
+                    if (a.kind === 'ORCHESTRATOR') return '#6366f1';
+                    if (a.department === 'VENDAS') return '#10b981';
+                    if (a.department === 'SUPORTE') return '#3b82f6';
+                    if (a.department === 'CS') return '#8b5cf6';
+                    return '#a1a1aa';
+                  }}
+                  className="!bg-white dark:!bg-zinc-900"
+                />
+              </ReactFlow>
+            </ReactFlowProvider>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center p-10">
+              <div className="rounded-xl border-2 border-dashed border-zinc-200 p-16 dark:border-zinc-800">
+                <Bot className="mx-auto h-10 w-10 text-zinc-300 dark:text-zinc-600" />
+                <p className="mt-3 text-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                  Nenhum agente cadastrado ainda
+                </p>
+                <p className="mt-1 max-w-md text-center text-xs text-zinc-400 dark:text-zinc-500">
+                  Crie um agente, dê a ele um system prompt e atribua a um canal —
+                  ele passa a responder automaticamente.
+                </p>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="mx-auto mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Criar primeiro agente
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <CreateAgentDialog
