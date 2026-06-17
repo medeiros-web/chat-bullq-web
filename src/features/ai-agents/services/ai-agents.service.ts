@@ -20,6 +20,7 @@ export const DEPARTMENTS = [
   'OPERACOES',
   'TECNOLOGIA',
   'MARKETING',
+  'NEGOCIOS',
   'OUTRO',
 ] as const;
 export type Department = (typeof DEPARTMENTS)[number];
@@ -35,6 +36,7 @@ export const DEPARTMENT_COLORS: Record<string, { bg: string; text: string; ring:
   OPERACOES:   { bg: 'bg-cyan-50 dark:bg-cyan-900/20',       text: 'text-cyan-700 dark:text-cyan-400',       ring: 'ring-cyan-200 dark:ring-cyan-800' },
   TECNOLOGIA:  { bg: 'bg-indigo-50 dark:bg-indigo-900/20',   text: 'text-indigo-700 dark:text-indigo-400',   ring: 'ring-indigo-200 dark:ring-indigo-800' },
   MARKETING:   { bg: 'bg-pink-50 dark:bg-pink-900/20',       text: 'text-pink-700 dark:text-pink-400',       ring: 'ring-pink-200 dark:ring-pink-800' },
+  NEGOCIOS:    { bg: 'bg-orange-50 dark:bg-orange-900/20',   text: 'text-orange-700 dark:text-orange-400',   ring: 'ring-orange-200 dark:ring-orange-800' },
   OUTRO:       { bg: 'bg-zinc-100 dark:bg-zinc-800/50',      text: 'text-zinc-600 dark:text-zinc-400',       ring: 'ring-zinc-200 dark:ring-zinc-700' },
 };
 
