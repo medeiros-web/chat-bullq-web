@@ -1,6 +1,11 @@
 import { api } from '@/lib/api';
 
-export type ChannelType = 'WHATSAPP_OFFICIAL' | 'WHATSAPP_ZAPPFY' | 'INSTAGRAM';
+export type ChannelType =
+  | 'WHATSAPP_OFFICIAL'
+  | 'WHATSAPP_ZAPPFY'
+  | 'WHATSAPP_EVOLUTION'
+  | 'WHATSAPP_EVOLUTION_GO'
+  | 'INSTAGRAM';
 
 export type ChannelVisibility = 'ORG' | 'PRIVATE';
 
@@ -112,5 +117,15 @@ export const channelsService = {
   async cancelSync(id: string): Promise<ChannelSyncJob | null> {
     const { data } = await api.post<{ data: { job: ChannelSyncJob | null } }>(`/channels/${id}/sync/cancel`);
     return data.data.job;
+  },
+
+  async getQrCode(id: string): Promise<{ qrCode: string | null; status: string }> {
+    const { data } = await api.get<{ data: { qrCode: string | null; status: string } }>(`/channels/${id}/qr`);
+    return data.data;
+  },
+
+  async getConnectionStatus(id: string): Promise<{ status: string; connected: boolean }> {
+    const { data } = await api.get<{ data: { status: string; connected: boolean } }>(`/channels/${id}/status`);
+    return data.data;
   },
 };

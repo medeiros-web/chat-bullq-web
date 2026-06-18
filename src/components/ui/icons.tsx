@@ -1,5 +1,82 @@
 import type { SVGProps } from 'react';
 
+export function EvolutionIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="url(#ev_grad)" />
+      <path d="M13 10h7l-3 7h5l-9 9 2-8h-5l3-8Z" fill="white" />
+      <defs>
+        <linearGradient id="ev_grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#25D366" />
+          <stop offset="1" stopColor="#128C7E" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function EvolutionGoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="url(#evgo_grad)" />
+      <path d="M12 18a6 6 0 1 1 6 6v-3l-4-3 4-3v-3a6 6 0 0 1-6 6Z" fill="white" />
+      <circle cx="22" cy="18" r="2" fill="white" fillOpacity="0.7" />
+      <defs>
+        <linearGradient id="evgo_grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6EE7B7" />
+          <stop offset="1" stopColor="#059669" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function OpenAIIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="#000" />
+      <path
+        d="M26.5 15.7a5.2 5.2 0 0 0-.45-4.27 5.27 5.27 0 0 0-5.66-2.53 5.2 5.2 0 0 0-3.92-1.75 5.27 5.27 0 0 0-5.02 3.65 5.2 5.2 0 0 0-3.48 2.52 5.27 5.27 0 0 0 .65 6.18 5.2 5.2 0 0 0 .45 4.27 5.27 5.27 0 0 0 5.66 2.53 5.2 5.2 0 0 0 3.92 1.75 5.27 5.27 0 0 0 5.02-3.65 5.2 5.2 0 0 0 3.48-2.52 5.27 5.27 0 0 0-.65-6.18ZM18 22.7a3.9 3.9 0 0 1-2.5-.9l.12-.07 4.15-2.4a.68.68 0 0 0 .34-.59v-5.87l1.76 1.01a.06.06 0 0 1 .03.05v4.85A3.93 3.93 0 0 1 18 22.7Zm-8.4-3.6a3.9 3.9 0 0 1-.47-2.62l.13.07 4.14 2.4a.68.68 0 0 0 .68 0l5.06-2.92v2.03a.06.06 0 0 1-.02.05l-4.19 2.42a3.93 3.93 0 0 1-5.33-1.43Zm-1.1-9.07a3.9 3.9 0 0 1 2.04-1.71v4.94a.68.68 0 0 0 .34.59l5.06 2.92-1.75 1.01a.06.06 0 0 1-.06 0L9.94 15.3a3.93 3.93 0 0 1-.44-5.27Zm14.42 3.38-5.06-2.92 1.75-1.01a.06.06 0 0 1 .06 0l4.19 2.42a3.93 3.93 0 0 1-.61 7.1v-4.94a.68.68 0 0 0-.33-.65Zm1.74-2.65-.12-.08-4.14-2.4a.68.68 0 0 0-.68 0L15.66 11.3V9.27a.06.06 0 0 1 .03-.05l4.18-2.41a3.93 3.93 0 0 1 5.86 4.08l-.07-.03Zm-10.97 3.6-1.75-1.01a.06.06 0 0 1-.03-.05v-4.85a3.93 3.93 0 0 1 6.45-3.02l-.12.07-4.15 2.4a.68.68 0 0 0-.34.59l-.06 5.87Zm.95-2.05 2.25-1.3 2.25 1.3v2.6l-2.25 1.3-2.25-1.3v-2.6Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
+export function GrokIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="#000" />
+      <text x="18" y="23" textAnchor="middle" fontSize="16" fontWeight="bold" fill="white" fontFamily="serif">𝕏</text>
+    </svg>
+  );
+}
+
+export function GeminiIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="url(#gem_grad)" />
+      <path d="M18 7c0 6.08-4.92 11-11 11 6.08 0 11 4.92 11 11 0-6.08 4.92-11 11-11-6.08 0-11-4.92-11-11Z" fill="white" />
+      <defs>
+        <linearGradient id="gem_grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4285F4" />
+          <stop offset="0.5" stopColor="#9C27B0" />
+          <stop offset="1" stopColor="#EA4335" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function AnthropicIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <circle cx="18" cy="18" r="18" fill="#D97757" />
+      <path d="M21.5 10h-3L13 26h3l1.2-3.2h5.6L24 26h3L21.5 10Zm-3.5 9.8 1.8-4.8 1.8 4.8h-3.6Z" fill="white" />
+    </svg>
+  );
+}
+
 export function ZappfyIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 50 45" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
