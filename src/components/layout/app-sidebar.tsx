@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronUp,
   Zap,
+  CalendarDays,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
@@ -36,6 +37,7 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/scheduling', label: 'Agenda', icon: CalendarDays },
   { href: '/automations', label: 'Automações', icon: Zap },
 ];
 
