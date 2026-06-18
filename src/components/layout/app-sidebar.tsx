@@ -10,6 +10,7 @@ import {
   Zap,
   CalendarDays,
   Sparkles,
+  Scale,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
@@ -86,6 +87,17 @@ export function AppSidebar() {
 
       <SidebarBody>
         <SidebarSection>
+          {/* Causídico — destaque especial */}
+          <SidebarItem href="/causidico">
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-amber-500 to-orange-600 shrink-0">
+              <Scale className="size-3 text-white" />
+            </div>
+            <SidebarLabel>Causídico</SidebarLabel>
+            <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+              IA
+            </span>
+          </SidebarItem>
+
           <InboxTree />
           <PipelinesTree />
           <JarvisTree />
