@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Scale, Settings, MessageSquare, Sparkles, ChevronRight } from 'lucide-react';
 import { causidicoService, type CausidicoConfig } from '../services/causidico.service';
 import { CausidicoChat } from './causidico-chat';
@@ -100,10 +101,10 @@ export function CausidicoPage() {
                 {[
                   { label: 'Ver Agenda', href: '/scheduling', icon: '📅' },
                   { label: 'Gerenciar Canais', href: '/settings/channels', icon: '📱' },
-                  { label: 'Integrações LLM', href: '/settings/integrations/llm', icon: '🤖' },
+                  { label: 'Integrações LLM', href: '/settings/integrations', icon: '🤖' },
                   { label: 'Xquads', href: '/xquads', icon: '⚡' },
                 ].map((a) => (
-                  <a
+                  <Link
                     key={a.href}
                     href={a.href}
                     className="flex items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
@@ -111,7 +112,7 @@ export function CausidicoPage() {
                     <span className="text-base">{a.icon}</span>
                     {a.label}
                     <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400" />
-                  </a>
+                  </Link>
                 ))}
               </div>
 
