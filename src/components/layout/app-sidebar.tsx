@@ -112,6 +112,19 @@ export function AppSidebar() {
             <ExternalLink className="size-3 text-zinc-400" />
           </a>
 
+          <a
+            href="https://chatatender.vercel.app/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-950/5 dark:text-zinc-300 dark:hover:bg-white/5"
+          >
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-cyan-600 shrink-0">
+              <LayoutDashboard className="size-3 text-white" />
+            </div>
+            <span className="flex-1 truncate">Plataforma Geral</span>
+            <ExternalLink className="size-3 text-zinc-400" />
+          </a>
+
           <InboxTree />
           <PipelinesTree />
           <JarvisTree />
