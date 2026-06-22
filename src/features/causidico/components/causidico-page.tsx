@@ -103,10 +103,17 @@ export function CausidicoPage() {
                   { label: 'Gerenciar Canais', href: '/settings/channels', icon: '📱' },
                   { label: 'Integrações LLM', href: '/settings/integrations', icon: '🤖' },
                   { label: 'Xquads', href: '/xquads', icon: '⚡' },
+                  {
+                    label: 'Direito Minerário e outras Skills',
+                    href: 'https://atendimento-web.vercel.app',
+                    icon: '⛏️',
+                    external: true,
+                  },
                 ].map((a) => (
                   <Link
                     key={a.href}
                     href={a.href}
+                    {...(a.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     className="flex items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
                     <span className="text-base">{a.icon}</span>
